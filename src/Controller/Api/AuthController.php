@@ -46,7 +46,7 @@ class AuthController extends AbstractController
         $username = trim($data['username'] ?? '');
         $password = $data['password'] ?? '';
         $role = $data['role'] ?? 'ROLE_ARTIST'; // default role
-        
+
 
         // Validate required fields
         if (!$email || !$username || !$password) {
@@ -168,6 +168,49 @@ class AuthController extends AbstractController
             'refresh_expires_at' => $rt->getExpiresAt()->format(\DateTime::ATOM)
         ]);
     }
+    #[Route('/verify', name: 'verify', methods: ['POST'])]
+    public function verify(Request $request): JsonResponse
+    {
+        $data = json_decode($request->getContent(), true);
+        $email = $data['email'] ?? null;
+        $code = $data['code'] ?? null;
+
+        if (!$email || !$code) {
+            return $this->json(['error' => 'email and code are required'], Response::HTTP_BAD_REQUEST);
+        }
+
+        // Fetch the user by email
+        $user = $this->em->getRepository(User::class)->findOneBy(['email' => $email]);
+        if (!$user) {
+            return $this->json(['error' => 'user not found'], Response::HTTP_NOT_FOUND);
+        }
+
+        // Fetch the ActionCode entry associated with the user and the given code
+        $acRepo = $this->em->getRepository(ActionCode::class);
+        $actionCode = $acRepo->findOneBy([
+            'user' => $user,
+            'code' => $code,
+            'purpose' => ActionCode::PURPOSE_EMAIL_VERIFY,
+            'used' => false
+        ]);
+
+        if (!$actionCode) {
+            return $this->json(['error' => 'invalid or expired verification code'], Response::HTTP_BAD_REQUEST);
+        }
+
+        // Check if the code has expired
+        if ($actionCode->getExpiresAt() < new \DateTime()) {
+            return $this->json(['error' => 'verification code expired'], Response::HTTP_BAD_REQUEST);
+        }
+
+        // Mark the action code as used
+        $actionCode->setUsed(true);
+        $user->setIsVerified(true);  // Mark user as verified
+        $this->em->flush();
+
+        return $this->json(['message' => 'email verified successfully'], Response::HTTP_OK);
+    }
+
 
     #[Route('/forgot', name: 'forgot', methods: ['POST'])]
     public function forgot(Request $request): JsonResponse
@@ -175,33 +218,49 @@ class AuthController extends AbstractController
         $data = json_decode($request->getContent(), true);
         $email = $data['email'] ?? null;
 
-        if (!$email)
-            return $this->json(['message' => 'ok'], Response::HTTP_OK);
+        if (!$email) {
+            // Handle the case when email is not provided
+            return $this->json(['error' => 'Email is required'], Response::HTTP_BAD_REQUEST);
+        }
 
+        // Look up user by email
         $user = $this->em->getRepository(User::class)->findOneBy(['email' => $email]);
+
         if (!$user) {
-            // Do not reveal existence
+            // Don't reveal whether an account exists or not
             return $this->json(['message' => 'If account exists, email sent'], Response::HTTP_OK);
         }
 
+        // Generate a random password reset code
         $code = random_int(100000, 999999);
+
+        // Create a new ActionCode object for password reset
         $ac = new ActionCode();
         $ac->setUser($user);
         $ac->setCode((string) $code);
         $ac->setPurpose(ActionCode::PURPOSE_PASSWORD_RESET);
         $ac->setExpiresAt(new \DateTime('+15 minutes'));
+
+        // Persist the ActionCode entity to the database
         $this->em->persist($ac);
         $this->em->flush();
 
+        // Prepare the email content
         $emailMsg = (new Email())
-            ->from('no-reply@yourdomain.com')
+            ->from('no-reply@yourdomain.com') // Change to your sender address
             ->to($user->getEmail())
             ->subject('Password reset code')
             ->text("Your password reset code is: $code (valid for 15 minutes)");
 
-        $this->mailer->send($emailMsg);
-
-        return $this->json(['message' => 'If account exists, email sent'], Response::HTTP_OK);
+        try {
+            // Attempt to send the email
+            $this->mailer->send($emailMsg);
+            return $this->json(['message' => 'If account exists, email sent'], Response::HTTP_OK);
+        } catch (\Exception $e) {
+            // If email sending fails, log the error and return a failure message
+            $this->logger->error("Error sending password reset email: " . $e->getMessage());
+            return $this->json(['error' => 'Failed to send email. Please try again later.'], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
     }
 
     #[Route('/reset', name: 'reset', methods: ['POST'])]

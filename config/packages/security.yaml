@@ -11,7 +11,7 @@ security:
 
     firewalls:
         dev:
-            pattern: ^/(_(profiler|wdt)|css|images|js)/
+            pattern: ^/api/
             security: false
 
         login:
@@ -36,3 +36,5 @@ security:
         - { path: ^/api/auth/forgot, roles: PUBLIC_ACCESS }
         - { path: ^/api/auth/reset, roles: PUBLIC_ACCESS }
         - { path: ^/api/auth/logout, roles: PUBLIC_ACCESS }
+        - { path: ^/api/auth/verify, roles: PUBLIC_ACCESS }
+        - { path: ^/api/, roles: ROLE_USER }
