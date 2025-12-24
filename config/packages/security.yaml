@@ -1,23 +1,18 @@
 security:
+    password_hashers:
+        App\Entity\User:
+            algorithm: auto
+
     providers:
         app_user_provider:
             entity:
                 class: App\Entity\User
                 property: email
 
-    password_hashers:
-        App\Entity\User:
-            algorithm: auto
-
     firewalls:
-        dev:
-            pattern: ^/api/
-            security: false
-
         login:
             pattern: ^/api/auth/login
             stateless: true
-
             json_login:
                 check_path: /api/auth/login
                 username_path: email
@@ -35,6 +30,5 @@ security:
         - { path: ^/api/auth/register, roles: PUBLIC_ACCESS }
         - { path: ^/api/auth/forgot, roles: PUBLIC_ACCESS }
         - { path: ^/api/auth/reset, roles: PUBLIC_ACCESS }
-        - { path: ^/api/auth/logout, roles: PUBLIC_ACCESS }
         - { path: ^/api/auth/verify, roles: PUBLIC_ACCESS }
-        - { path: ^/api/, roles: ROLE_USER }
+        - { path: ^/api, roles: IS_AUTHENTICATED_FULLY }

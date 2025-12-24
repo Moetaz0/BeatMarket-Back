@@ -16,6 +16,7 @@ use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Component\Mime\Email;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Uid\Uuid;
+use Twig\Environment;
 
 #[Route('/api/auth', name: 'api_auth_')]
 class AuthController extends AbstractController
@@ -24,17 +25,20 @@ class AuthController extends AbstractController
     private JWTTokenManagerInterface $jwtManager;
     private UserPasswordHasherInterface $hasher;
     private MailerInterface $mailer;
+    private Environment $twig;
 
     public function __construct(
         EntityManagerInterface $em,
         JWTTokenManagerInterface $jwtManager,
         UserPasswordHasherInterface $hasher,
-        MailerInterface $mailer
+        MailerInterface $mailer,
+        Environment $twig
     ) {
         $this->em = $em;
         $this->jwtManager = $jwtManager;
         $this->hasher = $hasher;
         $this->mailer = $mailer;
+        $this->twig = $twig;
     }
     #[Route('/register', name: 'register', methods: ['POST'])]
     public function register(Request $request): JsonResponse
@@ -85,11 +89,16 @@ class AuthController extends AbstractController
         $this->em->flush();
 
         // Send verification email
+        $htmlContent = $this->twig->render('emails/verify_email.html.twig', [
+            'username' => $user->getUsername(),
+            'code' => $code
+        ]);
+
         $emailMsg = (new Email())
             ->from('no-reply@yourdomain.com')
             ->to($user->getEmail())
             ->subject('Verify your email')
-            ->text("Your verification code: $code");
+            ->html($htmlContent);
 
         $this->mailer->send($emailMsg);
 
@@ -246,11 +255,16 @@ class AuthController extends AbstractController
         $this->em->flush();
 
         // Prepare the email content
+        $htmlContent = $this->twig->render('emails/reset_password.html.twig', [
+            'username' => $user->getUsername(),
+            'code' => $code
+        ]);
+
         $emailMsg = (new Email())
             ->from('no-reply@yourdomain.com') // Change to your sender address
             ->to($user->getEmail())
             ->subject('Password reset code')
-            ->text("Your password reset code is: $code (valid for 15 minutes)");
+            ->html($htmlContent);
 
         try {
             // Attempt to send the email

@@ -3,6 +3,8 @@
 namespace App\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
+use Doctrine\Common\Collections\Collection;
+use Doctrine\Common\Collections\ArrayCollection;
 
 #[ORM\Entity]
 class Beat
@@ -42,8 +44,137 @@ class Beat
     #[ORM\ManyToOne(targetEntity: Beatmaker::class, inversedBy: 'beats')]
     private ?Beatmaker $beatmaker = null;
 
+    #[ORM\ManyToOne(targetEntity: License::class, inversedBy: 'beats')]
+    private ?License $license = null;
+
     public function __construct()
     {
         $this->uploadedAt = new \DateTime();
+    }
+
+    public function getId(): ?int
+    {
+        return $this->id;
+    }
+
+    public function getTitle(): string
+    {
+        return $this->title;
+    }
+
+    public function setTitle(string $title): self
+    {
+        $this->title = $title;
+        return $this;
+    }
+
+    public function getDescription(): ?string
+    {
+        return $this->description;
+    }
+
+    public function setDescription(?string $description): self
+    {
+        $this->description = $description;
+        return $this;
+    }
+
+    public function getFileUrl(): string
+    {
+        return $this->fileUrl;
+    }
+
+    public function setFileUrl(string $fileUrl): self
+    {
+        $this->fileUrl = $fileUrl;
+        return $this;
+    }
+
+    public function getCoverImage(): ?string
+    {
+        return $this->coverImage;
+    }
+
+    public function setCoverImage(?string $coverImage): self
+    {
+        $this->coverImage = $coverImage;
+        return $this;
+    }
+
+    public function getPrice(): float
+    {
+        return $this->price;
+    }
+
+    public function setPrice(float $price): self
+    {
+        $this->price = $price;
+        return $this;
+    }
+
+    public function getGenre(): string
+    {
+        return $this->genre;
+    }
+
+    public function setGenre(string $genre): self
+    {
+        $this->genre = $genre;
+        return $this;
+    }
+
+    public function getBpm(): int
+    {
+        return $this->bpm;
+    }
+
+    public function setBpm(int $bpm): self
+    {
+        $this->bpm = $bpm;
+        return $this;
+    }
+
+    public function getKey(): ?string
+    {
+        return $this->key;
+    }
+
+    public function setKey(?string $key): self
+    {
+        $this->key = $key;
+        return $this;
+    }
+
+    public function getUploadedAt(): \DateTimeInterface
+    {
+        return $this->uploadedAt;
+    }
+
+    public function setUploadedAt(\DateTimeInterface $uploadedAt): self
+    {
+        $this->uploadedAt = $uploadedAt;
+        return $this;
+    }
+
+    public function getBeatmaker(): ?Beatmaker
+    {
+        return $this->beatmaker;
+    }
+
+    public function setBeatmaker(?Beatmaker $beatmaker): self
+    {
+        $this->beatmaker = $beatmaker;
+        return $this;
+    }
+
+    public function getLicense(): ?License
+    {
+        return $this->license;
+    }
+
+    public function setLicense(?License $license): self
+    {
+        $this->license = $license;
+        return $this;
     }
 }
