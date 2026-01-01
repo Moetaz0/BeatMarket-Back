@@ -35,12 +35,14 @@ class UserController extends AbstractController
         $this->twig = $twig;
     }
 
-    /**
-     * GET /api/user/profile - Get current user's profile
-     */
+
     #[Route('/profile', name: 'profile', methods: ['GET'])]
-    public function getProfile(): JsonResponse
+    public function getProfile(Request $request): JsonResponse
     {
+        // Debug: log authorization header
+        $authHeader = $request->headers->get('Authorization');
+        error_log("Authorization header: " . ($authHeader ?? 'MISSING'));
+
         /** @var User $user */
         $user = $this->getUser();
 
@@ -63,16 +65,7 @@ class UserController extends AbstractController
         ]);
     }
 
-    /**
-     * PUT /api/user/settings - Update user general settings
-     * 
-     * Request body example:
-     * {
-     *   "username": "newUsername",
-     *   "phone": "+1234567890",
-     *   "profilePicture": "https://example.com/avatar.jpg"
-     * }
-     */
+
     #[Route('/settings', name: 'update_settings', methods: ['PUT', 'PATCH'])]
     public function updateSettings(Request $request): JsonResponse
     {
@@ -84,6 +77,9 @@ class UserController extends AbstractController
         }
 
         $data = json_decode($request->getContent(), true);
+
+        // Debug: log received data
+        error_log("Update settings data: " . json_encode($data));
 
         // Update username if provided
         if (isset($data['username'])) {
@@ -108,8 +104,9 @@ class UserController extends AbstractController
             $user->setPhone($data['phone']);
         }
 
-        // Update profile picture if provided
-        if (isset($data['profilePicture'])) {
+        // Update profile picture if provided and not empty
+        if (isset($data['profilePicture']) && !empty(trim($data['profilePicture']))) {
+            error_log("Setting profile picture to: " . $data['profilePicture']);
             $user->setProfilePicture($data['profilePicture']);
         }
 
@@ -127,15 +124,7 @@ class UserController extends AbstractController
         ]);
     }
 
-    /**
-     * PUT /api/user/security/password - Change password
-     * 
-     * Request body:
-     * {
-     *   "currentPassword": "oldPassword123",
-     *   "newPassword": "newPassword456"
-     * }
-     */
+
     #[Route('/security/password', name: 'change_password', methods: ['PUT'])]
     public function changePassword(Request $request): JsonResponse
     {
@@ -183,15 +172,7 @@ class UserController extends AbstractController
         ]);
     }
 
-    /**
-     * PUT /api/user/security/email - Change email (requires verification)
-     * 
-     * Request body:
-     * {
-     *   "newEmail": "newemail@example.com",
-     *   "password": "currentPassword"
-     * }
-     */
+
     #[Route('/security/email', name: 'change_email', methods: ['PUT'])]
     public function changeEmail(Request $request): JsonResponse
     {

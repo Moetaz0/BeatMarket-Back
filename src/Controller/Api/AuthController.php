@@ -128,9 +128,13 @@ class AuthController extends AbstractController
         // create JWT
         $jwt = $this->jwtManager->create($user);
 
+        // Debug: log token creation
+        error_log("JWT Token created for user: " . $user->getUserIdentifier());
+        error_log("Token payload user: " . $user->getId());
+
         $response = [
             'token' => $jwt,
-            'expires_in' => 900 // equal to token_ttl in config (seconds)
+            'expires_in' => 3600 // match token_ttl in config (seconds)
         ];
 
         if ($remember) {
