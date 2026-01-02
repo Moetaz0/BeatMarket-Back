@@ -59,9 +59,9 @@ class LicenseController extends AbstractController
      * 
      * Request body example:
      * {
-     *   "name": "Commercial License",
-     *   "terms": "Can be used commercially in any project",
-     *   "priceMultiplier": 1.5
+     *   "name": "Premium License",
+     *   "terms": "Can be used for premium projects",
+     *   "priceMultiplier": 2.0
      * }
      */
     #[Route('', name: 'create', methods: ['POST'])]

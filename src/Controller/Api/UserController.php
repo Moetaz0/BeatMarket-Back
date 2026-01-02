@@ -4,6 +4,7 @@ namespace App\Controller\Api;
 
 use App\Entity\User;
 use App\Entity\ActionCode;
+use App\Service\CloudinaryService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -22,17 +23,20 @@ class UserController extends AbstractController
     private UserPasswordHasherInterface $hasher;
     private MailerInterface $mailer;
     private Environment $twig;
+    private CloudinaryService $cloudinaryService;
 
     public function __construct(
         EntityManagerInterface $em,
         UserPasswordHasherInterface $hasher,
         MailerInterface $mailer,
-        Environment $twig
+        Environment $twig,
+        CloudinaryService $cloudinaryService
     ) {
         $this->em = $em;
         $this->hasher = $hasher;
         $this->mailer = $mailer;
         $this->twig = $twig;
+        $this->cloudinaryService = $cloudinaryService;
     }
 
 
@@ -122,6 +126,129 @@ class UserController extends AbstractController
                 'profilePicture' => $user->getProfilePicture()
             ]
         ]);
+    }
+
+
+    /**
+     * POST /api/user/profile-picture - Upload profile picture to Cloudinary
+     * 
+     * Request: multipart/form-data with 'file' field
+     */
+    #[Route('/profile-picture', name: 'upload_profile_picture', methods: ['POST'])]
+    public function uploadProfilePicture(Request $request): JsonResponse
+    {
+        /** @var User $user */
+        $user = $this->getUser();
+
+        if (!$user) {
+            return $this->json(['error' => 'Unauthorized'], Response::HTTP_UNAUTHORIZED);
+        }
+
+        $file = $request->files->get('file');
+
+        if (!$file) {
+            return $this->json(
+                ['error' => 'No file provided'],
+                Response::HTTP_BAD_REQUEST
+            );
+        }
+
+        // Validate file type
+        $allowedMimes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+        if (!in_array($file->getMimeType(), $allowedMimes)) {
+            return $this->json(
+                ['error' => 'Invalid file type. Only images are allowed (jpeg, jpg, png, gif, webp)'],
+                Response::HTTP_BAD_REQUEST
+            );
+        }
+
+        // Validate file size (max 5MB)
+        $maxSize = 5 * 1024 * 1024; // 5MB in bytes
+        if ($file->getSize() > $maxSize) {
+            return $this->json(
+                ['error' => 'File too large. Maximum size is 5MB'],
+                Response::HTTP_BAD_REQUEST
+            );
+        }
+
+        try {
+            // Delete old profile picture from Cloudinary if exists
+            if ($user->getProfilePicture()) {
+                $this->cloudinaryService->delete($user->getProfilePicture());
+            }
+
+            // Upload to Cloudinary with user-specific public ID
+            $publicId = 'user_' . $user->getId() . '_' . time();
+            $cloudinaryUrl = $this->cloudinaryService->upload(
+                $file,
+                'beatmarket/profiles',
+                $publicId
+            );
+
+            if (!$cloudinaryUrl) {
+                return $this->json(
+                    ['error' => 'Failed to upload image to Cloudinary'],
+                    Response::HTTP_INTERNAL_SERVER_ERROR
+                );
+            }
+
+            // Update user's profile picture URL in database
+            $user->setProfilePicture($cloudinaryUrl);
+            $this->em->flush();
+
+            return $this->json([
+                'message' => 'Profile picture uploaded successfully',
+                'profilePicture' => $cloudinaryUrl
+            ]);
+
+        } catch (\Exception $e) {
+            error_log("Profile picture upload error: " . $e->getMessage());
+            return $this->json(
+                ['error' => 'Failed to upload profile picture'],
+                Response::HTTP_INTERNAL_SERVER_ERROR
+            );
+        }
+    }
+
+    /**
+     * DELETE /api/user/profile-picture - Delete profile picture
+     */
+    #[Route('/profile-picture', name: 'delete_profile_picture', methods: ['DELETE'])]
+    public function deleteProfilePicture(): JsonResponse
+    {
+        /** @var User $user */
+        $user = $this->getUser();
+
+        if (!$user) {
+            return $this->json(['error' => 'Unauthorized'], Response::HTTP_UNAUTHORIZED);
+        }
+
+        if (!$user->getProfilePicture()) {
+            return $this->json(
+                ['error' => 'No profile picture to delete'],
+                Response::HTTP_BAD_REQUEST
+            );
+        }
+
+        try {
+            // Delete from Cloudinary
+            $this->cloudinaryService->delete($user->getProfilePicture());
+
+            // Remove from database
+            $user->setProfilePicture(null);
+            $this->em->flush();
+
+            return $this->json([
+                'message' => 'Profile picture deleted successfully'
+            ]);
+
+        } catch (\Exception $e) {
+            error_log("Profile picture delete error: " . $e->getMessage());
+            return $this->json(
+                ['error' => 'Failed to delete profile picture'],
+                Response::HTTP_INTERNAL_SERVER_ERROR
+            );
+        }
     }
 
 

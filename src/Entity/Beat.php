@@ -41,8 +41,8 @@ class Beat
     #[ORM\Column(type: 'datetime')]
     private \DateTimeInterface $uploadedAt;
 
-    #[ORM\ManyToOne(targetEntity: Beatmaker::class, inversedBy: 'beats')]
-    private ?Beatmaker $beatmaker = null;
+    #[ORM\ManyToOne(targetEntity: User::class)]
+    private ?User $user = null;
 
     #[ORM\ManyToOne(targetEntity: License::class, inversedBy: 'beats')]
     private ?License $license = null;
@@ -156,14 +156,14 @@ class Beat
         return $this;
     }
 
-    public function getBeatmaker(): ?Beatmaker
+    public function getUser(): ?User
     {
-        return $this->beatmaker;
+        return $this->user;
     }
 
-    public function setBeatmaker(?Beatmaker $beatmaker): self
+    public function setUser(?User $user): self
     {
-        $this->beatmaker = $beatmaker;
+        $this->user = $user;
         return $this;
     }
 

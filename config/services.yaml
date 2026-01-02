@@ -36,3 +36,7 @@ services:
                   event: lexik_jwt_authentication.on_jwt_decoded,
                   method: onJWTDecoded,
               }
+    # Cloudinary Service
+    App\Service\CloudinaryService:
+        arguments:
+            $cloudinaryUrl: "%env(CLOUDINARY_URL)%"

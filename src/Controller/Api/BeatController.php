@@ -3,8 +3,9 @@
 namespace App\Controller\Api;
 
 use App\Entity\Beat;
-use App\Entity\Beatmaker;
+use App\Entity\User;
 use App\Entity\License;
+use App\Service\CloudinaryService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -16,10 +17,14 @@ use Symfony\Component\Routing\Annotation\Route;
 class BeatController extends AbstractController
 {
     private EntityManagerInterface $em;
+    private CloudinaryService $cloudinaryService;
 
-    public function __construct(EntityManagerInterface $em)
-    {
+    public function __construct(
+        EntityManagerInterface $em,
+        CloudinaryService $cloudinaryService
+    ) {
         $this->em = $em;
+        $this->cloudinaryService = $cloudinaryService;
     }
 
     /**
@@ -70,49 +75,73 @@ class BeatController extends AbstractController
     /**
      * POST /api/beats - Create a new beat
      * 
-     * Request body example:
-     * {
-     *   "title": "Summer Vibes",
-     *   "description": "Chill beat with tropical vibes",
-     *   "fileUrl": "https://example.com/beat.mp3",
-     *   "coverImage": "https://example.com/cover.jpg",
-     *   "price": 29.99,
-     *   "genre": "Hip-Hop",
-     *   "bpm": 95,
-     *   "key": "C#m",
-     *   "beatmakerId": 1,
-     *   "licenseId": 2
-     * }
+     * Request body (multipart/form-data):
+     * - audioFile: (file) The audio file to upload (required)
+     * - title: (string) Beat title (required)
+     * - price: (float) Beat price (required)
+     * - genre: (string) Beat genre (required)
+     * - bpm: (int) Beats per minute (required)
+     * - userId: (int) User ID (required)
+     * - description: (string) Beat description (optional)
+     * - coverImage: (file) Cover image file (optional)
+     * - key: (string) Musical key (optional)
+     * - licenseId: (int) License ID (optional)
      */
     #[Route('', name: 'create', methods: ['POST'])]
     public function create(Request $request): JsonResponse
     {
-        $data = json_decode($request->getContent(), true);
+        // Get form data
+        $title = $request->request->get('title');
+        $price = $request->request->get('price');
+        $genre = $request->request->get('genre');
+        $bpm = $request->request->get('bpm');
+        $userId = $request->request->get('userId');
+        $description = $request->request->get('description');
+        $key = $request->request->get('key');
+        $licenseId = $request->request->get('licenseId');
+
+        // Get uploaded files
+        $audioFile = $request->files->get('audioFile');
+        $coverImageFile = $request->files->get('coverImage');
 
         // Validate required fields
-        $required = ['title', 'fileUrl', 'price', 'genre', 'bpm', 'beatmakerId'];
-        foreach ($required as $field) {
-            if (!isset($data[$field])) {
-                return $this->json(
-                    ['error' => "Missing required field: $field"],
-                    Response::HTTP_BAD_REQUEST
-                );
-            }
+        if (!$title || !$price || !$genre || !$bpm || !$userId) {
+            return $this->json(
+                ['error' => 'Missing required fields: title, price, genre, bpm, userId'],
+                Response::HTTP_BAD_REQUEST
+            );
         }
 
-        // Get the beatmaker
-        $beatmaker = $this->em->getRepository(Beatmaker::class)->find($data['beatmakerId']);
-        if (!$beatmaker) {
+        // Validate audio file
+        if (!$audioFile) {
             return $this->json(
-                ['error' => 'Beatmaker not found'],
+                ['error' => 'Audio file is required'],
+                Response::HTTP_BAD_REQUEST
+            );
+        }
+
+        // Validate audio file type
+        $allowedAudioTypes = ['audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/x-wav', 'audio/ogg'];
+        if (!in_array($audioFile->getMimeType(), $allowedAudioTypes)) {
+            return $this->json(
+                ['error' => 'Invalid audio file type. Allowed types: MP3, WAV, OGG'],
+                Response::HTTP_BAD_REQUEST
+            );
+        }
+
+        // Get the user
+        $user = $this->em->getRepository(User::class)->find($userId);
+        if (!$user) {
+            return $this->json(
+                ['error' => 'User not found'],
                 Response::HTTP_NOT_FOUND
             );
         }
 
         // Get the license (optional)
         $license = null;
-        if (isset($data['licenseId'])) {
-            $license = $this->em->getRepository(License::class)->find($data['licenseId']);
+        if ($licenseId) {
+            $license = $this->em->getRepository(License::class)->find($licenseId);
             if (!$license) {
                 return $this->json(
                     ['error' => 'License not found'],
@@ -121,24 +150,48 @@ class BeatController extends AbstractController
             }
         }
 
+        // Upload audio file to Cloudinary
+        $audioUrl = $this->cloudinaryService->upload(
+            $audioFile,
+            'beatmarket/beats/audio',
+            null
+        );
+
+        if (!$audioUrl) {
+            return $this->json(
+                ['error' => 'Failed to upload audio file'],
+                Response::HTTP_INTERNAL_SERVER_ERROR
+            );
+        }
+
+        // Upload cover image if provided
+        $coverImageUrl = null;
+        if ($coverImageFile) {
+            $coverImageUrl = $this->cloudinaryService->upload(
+                $coverImageFile,
+                'beatmarket/beats/covers',
+                null
+            );
+        }
+
         // Create the beat
         $beat = new Beat();
-        $beat->setTitle($data['title']);
-        $beat->setFileUrl($data['fileUrl']);
-        $beat->setPrice($data['price']);
-        $beat->setGenre($data['genre']);
-        $beat->setBpm($data['bpm']);
-        $beat->setBeatmaker($beatmaker);
+        $beat->setTitle($title);
+        $beat->setFileUrl($audioUrl);
+        $beat->setPrice((float) $price);
+        $beat->setGenre($genre);
+        $beat->setBpm((int) $bpm);
+        $beat->setUser($user);
 
         // Optional fields
-        if (isset($data['description'])) {
-            $beat->setDescription($data['description']);
+        if ($description) {
+            $beat->setDescription($description);
         }
-        if (isset($data['coverImage'])) {
-            $beat->setCoverImage($data['coverImage']);
+        if ($coverImageUrl) {
+            $beat->setCoverImage($coverImageUrl);
         }
-        if (isset($data['key'])) {
-            $beat->setKey($data['key']);
+        if ($key) {
+            $beat->setKey($key);
         }
         if ($license) {
             $beat->setLicense($license);
@@ -255,9 +308,9 @@ class BeatController extends AbstractController
             'bpm' => $beat->getBpm(),
             'key' => $beat->getKey(),
             'uploadedAt' => $beat->getUploadedAt()->format('Y-m-d H:i:s'),
-            'beatmaker' => $beat->getBeatmaker() ? [
-                'id' => $beat->getBeatmaker()->getId(),
-                'username' => $beat->getBeatmaker()->getUsername(),
+            'user' => $beat->getUser() ? [
+                'id' => $beat->getUser()->getId(),
+                'username' => $beat->getUser()->getUsername(),
             ] : null,
             'license' => $beat->getLicense() ? [
                 'id' => $beat->getLicense()->getId(),
@@ -266,4 +319,37 @@ class BeatController extends AbstractController
             ] : null,
         ];
     }
+
+    /**
+     * Additional methods for handling beat-related functionalities can be added here
+     */
+
+    #[Route('/user/{userId}', name: 'list_by_user', methods: ['GET'])]
+    public function listByUser(int $userId, Request $request): JsonResponse
+    {
+        $page = (int) ($request->query->get('page', 1));
+        $limit = (int) ($request->query->get('limit', 10));
+        $offset = ($page - 1) * $limit;
+
+        $beatRepo = $this->em->getRepository(Beat::class);
+        $beats = $beatRepo->findBy(['user' => $userId], ['uploadedAt' => 'DESC'], $limit, $offset);
+        $total = count($beatRepo->findBy(['user' => $userId]));
+
+        $data = [];
+        foreach ($beats as $beat) {
+            $data[] = $this->beatToArray($beat);
+        }
+
+        return $this->json([
+            'data' => $data,
+            'pagination' => [
+                'page' => $page,
+                'limit' => $limit,
+                'total' => $total,
+                'pages' => ceil($total / $limit)
+            ]
+        ]);
+    }
+
+
 }
