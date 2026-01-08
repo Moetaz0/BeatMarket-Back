@@ -167,7 +167,7 @@ class FeedController extends AbstractController
      */
     private function beatToArray(Beat $beat): array
     {
-        $beatmaker = $beat->getBeatmaker();
+        $user = $beat->getUser();
         $license = $beat->getLicense();
 
         return [
@@ -181,9 +181,10 @@ class FeedController extends AbstractController
             'bpm' => $beat->getBpm(),
             'key' => $beat->getKey(),
             'uploadedAt' => $beat->getUploadedAt()->format('Y-m-d H:i:s'),
-            'beatmaker' => $beatmaker ? [
-                'id' => $beatmaker->getId(),
-                'name' => $beatmaker->getUser()?->getEmail() ?? 'Unknown'
+            'user' => $user ? [
+                'id' => $user->getId(),
+                'username' => $user->getUsername() ?? 'Unknown',
+                'email' => $user->getEmail() ?? 'Unknown'
             ] : null,
             'license' => $license ? [
                 'id' => $license->getId(),

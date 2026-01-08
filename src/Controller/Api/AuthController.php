@@ -49,7 +49,7 @@ class AuthController extends AbstractController
         $email = trim($data['email'] ?? '');
         $username = trim($data['username'] ?? '');
         $password = $data['password'] ?? '';
-        $role = $data['role'] ?? 'ROLE_ARTIST'; // default role
+        $role = $data['role'] ?? 'ROLE_USER'; // default role
 
 
         // Validate required fields

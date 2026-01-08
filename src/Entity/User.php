@@ -8,10 +8,6 @@ use Symfony\Component\Security\Core\User\UserInterface;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'users')]
-#[ORM\InheritanceType('JOINED')]
-#[ORM\DiscriminatorColumn(name: 'dtype', type: 'string')]
-#[ORM\DiscriminatorMap(['User' => User::class, 'Admin' => Admin::class, 'Artist' => Artist::class, 'Beatmaker' => Beatmaker::class])]
-
 class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
     #[ORM\Id]
@@ -42,6 +38,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     #[ORM\Column(type: 'boolean')]
     private bool $isVerified = false;
+
+    #[ORM\Column(name: 'stripe_customer_id', length: 255, nullable: true, unique: true)]
+    private ?string $stripeCustomerId = null;
 
     #[ORM\OneToOne(mappedBy: 'user', targetEntity: Wallet::class, cascade: ['persist', 'remove'])]
     private ?Wallet $wallet = null;
@@ -174,6 +173,17 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setWallet(?Wallet $wallet): self
     {
         $this->wallet = $wallet;
+        return $this;
+    }
+
+    public function getStripeCustomerId(): ?string
+    {
+        return $this->stripeCustomerId;
+    }
+
+    public function setStripeCustomerId(?string $stripeCustomerId): self
+    {
+        $this->stripeCustomerId = $stripeCustomerId;
         return $this;
     }
 }

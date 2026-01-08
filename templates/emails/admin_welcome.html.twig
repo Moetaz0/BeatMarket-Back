@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+        .email-container {
+            max-width: 600px;
+            margin: 20px auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+            font-weight: 600;
+        }
+        .header p {
+            margin: 5px 0 0 0;
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        .content {
+            padding: 40px 30px;
+        }
+        .greeting {
+            font-size: 18px;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        .greeting strong {
+            color: #667eea;
+        }
+        .info-section {
+            background-color: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            margin: 25px 0;
+            border-radius: 4px;
+        }
+        .info-section h3 {
+            margin: 0 0 15px 0;
+            color: #667eea;
+            font-size: 16px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .info-row {
+            margin-bottom: 12px;
+            display: flex;
+            align-items: flex-start;
+        }
+        .info-label {
+            font-weight: 600;
+            color: #555;
+            min-width: 100px;
+            margin-right: 15px;
+        }
+        .info-value {
+            color: #333;
+            word-break: break-all;
+            padding: 8px 12px;
+            background-color: white;
+            border-radius: 4px;
+            border: 1px solid #e0e0e0;
+            font-family: 'Courier New', monospace;
+        }
+        .login-button {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 40px;
+            text-decoration: none;
+            border-radius: 4px;
+            margin: 25px 0;
+            font-weight: 600;
+            text-align: center;
+            transition: opacity 0.3s;
+        }
+        .login-button:hover {
+            opacity: 0.9;
+        }
+        .security-notice {
+            background-color: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 25px 0;
+            border-radius: 4px;
+            color: #856404;
+            font-size: 13px;
+        }
+        .security-notice strong {
+            display: block;
+            margin-bottom: 8px;
+        }
+        .footer {
+            background-color: #f8f9fa;
+            padding: 20px 30px;
+            text-align: center;
+            border-top: 1px solid #e0e0e0;
+            font-size: 12px;
+            color: #666;
+        }
+        .footer a {
+            color: #667eea;
+            text-decoration: none;
+        }
+        .divider {
+            border-bottom: 1px solid #e0e0e0;
+            margin: 25px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <!-- Header -->
+        <div class="header">
+            <h1>BeatMarket</h1>
+            <p>Admin Account Created</p>
+        </div>
+
+        <!-- Content -->
+        <div class="content">
+            <div class="greeting">
+                Welcome to BeatMarket Admin Panel, <strong>{{ fullName }}</strong>! 👋
+            </div>
+
+            <p>Your admin account has been successfully created. Below are your login credentials. Please keep this information safe and change your password upon first login.</p>
+
+            <!-- Credentials Section -->
+            <div class="info-section">
+                <h3>📋 Your Login Credentials</h3>
+                
+                <div class="info-row">
+                    <span class="info-label">Email:</span>
+                    <span class="info-value">{{ email }}</span>
+                </div>
+
+                <div class="info-row">
+                    <span class="info-label">Password:</span>
+                    <span class="info-value">{{ password }}</span>
+                </div>
+            </div>
+
+            <!-- Security Notice -->
+            <div class="security-notice">
+                <strong>⚠️ Security Reminder</strong>
+                <p>
+                    • Your password has been randomly generated for your security.<br>
+                    • Change your password immediately after your first login.<br>
+                    • Do not share your credentials with anyone.<br>
+                    • Store this email in a secure location.
+                </p>
+            </div>
+
+            <!-- Login Button -->
+            <div style="text-align: center;">
+                <a href="{{ loginUrl }}" class="login-button">Login to Admin Panel</a>
+            </div>
+
+            <!-- Additional Info -->
+            <div class="divider"></div>
+
+            <h3 style="color: #333; font-size: 16px;">What's Next?</h3>
+            <ul style="color: #555; font-size: 14px;">
+                <li>Log in to your admin account using the credentials above</li>
+                <li>Update your password and profile information</li>
+                <li>Review the admin documentation to understand your responsibilities</li>
+                <li>Set up two-factor authentication for enhanced security</li>
+            </ul>
+
+            <div class="divider"></div>
+
+            <p style="color: #666; font-size: 13px;">
+                If you need any assistance or have questions about your admin account, please contact the system administrator.
+            </p>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p style="margin: 0 0 10px 0;">
+                © 2026 BeatMarket. All rights reserved.
+            </p>
+            <p style="margin: 0;">
+                This is an automated email. Please do not reply to this message.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

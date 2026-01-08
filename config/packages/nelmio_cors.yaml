@@ -1,13 +1,36 @@
 nelmio_cors:
     defaults:
         allow_credentials: true
-        allow_origin: ["http://localhost:5173"]
+        allow_origin: ["*"]
         allow_headers: ["Content-Type", "Authorization"]
         allow_methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
         max_age: 3600
     paths:
+        "^/api/admin/contacts$":
+            allow_origin: ["*"]
+            allow_headers: ["Content-Type", "Authorization"]
+            allow_methods: ["GET", "POST", "OPTIONS"]
+            allow_credentials: false
+        "^/api/admin/faqs$":
+            allow_origin: ["*"]
+            allow_headers: ["Content-Type", "Authorization"]
+            allow_methods: ["GET", "OPTIONS"]
+            allow_credentials: false
+        "^/api/admin/tickets$":
+            allow_origin: ["*"]
+            allow_headers: ["Content-Type", "Authorization"]
+            allow_methods: ["GET", "OPTIONS"]
+            allow_credentials: false
         "^/api/":
-            allow_origin: ["http://localhost:5173"]
+            allow_origin:
+                [
+                    "http://localhost:5173",
+                    "http://localhost:3000",
+                    "http://localhost:8080",
+                    "http://127.0.0.1:5173",
+                    "https://localhost:5173",
+                    "https://127.0.0.1:5173",
+                ]
             allow_headers: ["Content-Type", "Authorization"]
             allow_methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
             allow_credentials: true

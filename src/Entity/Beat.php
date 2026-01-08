@@ -47,9 +47,21 @@ class Beat
     #[ORM\ManyToOne(targetEntity: License::class, inversedBy: 'beats')]
     private ?License $license = null;
 
+    #[ORM\Column(type: 'integer', options: ['default' => 0])]
+    private int $views = 0;
+
+    #[ORM\Column(type: 'boolean', options: ['default' => false])]
+    private bool $isExclusive = false;
+
+    #[ORM\ManyToOne(targetEntity: User::class)]
+    #[ORM\JoinColumn(nullable: true)]
+    private ?User $exclusiveOwner = null;
+
     public function __construct()
     {
         $this->uploadedAt = new \DateTime();
+        $this->views = 0;
+        $this->isExclusive = false;
     }
 
     public function getId(): ?int
@@ -175,6 +187,45 @@ class Beat
     public function setLicense(?License $license): self
     {
         $this->license = $license;
+        return $this;
+    }
+
+    public function getViews(): int
+    {
+        return $this->views;
+    }
+
+    public function setViews(int $views): self
+    {
+        $this->views = $views;
+        return $this;
+    }
+
+    public function incrementViews(): self
+    {
+        $this->views++;
+        return $this;
+    }
+
+    public function isExclusive(): bool
+    {
+        return $this->isExclusive;
+    }
+
+    public function setIsExclusive(bool $isExclusive): self
+    {
+        $this->isExclusive = $isExclusive;
+        return $this;
+    }
+
+    public function getExclusiveOwner(): ?User
+    {
+        return $this->exclusiveOwner;
+    }
+
+    public function setExclusiveOwner(?User $exclusiveOwner): self
+    {
+        $this->exclusiveOwner = $exclusiveOwner;
         return $this;
     }
 }

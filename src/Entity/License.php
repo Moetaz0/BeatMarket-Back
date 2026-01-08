@@ -25,6 +25,9 @@ class License
     #[ORM\Column(type: 'float')]
     private float $priceMultiplier;
 
+    #[ORM\Column(type: 'boolean', options: ['default' => false])]
+    private bool $isExclusive = false;
+
     #[ORM\OneToMany(mappedBy: 'license', targetEntity: Beat::class)]
     private Collection $beats;
 
@@ -68,6 +71,17 @@ class License
     public function setPriceMultiplier(float $priceMultiplier): self
     {
         $this->priceMultiplier = $priceMultiplier;
+        return $this;
+    }
+
+    public function isExclusive(): bool
+    {
+        return $this->isExclusive;
+    }
+
+    public function setIsExclusive(bool $isExclusive): self
+    {
+        $this->isExclusive = $isExclusive;
         return $this;
     }
 

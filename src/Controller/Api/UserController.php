@@ -512,4 +512,82 @@ class UserController extends AbstractController
             'twoFactorEnabled' => false // TODO: Implement 2FA
         ]);
     }
+
+    /**
+     * PUT /api/user/complete-profile - Complete user profile after registration
+     * 
+     * Request body (all fields optional):
+     * {
+     *   "phone": "123456789",
+     *   "profilePicture": "https://res.cloudinary.com/...",
+     *   "role": "ROLE_USER"
+     * }
+     */
+    #[Route('/complete-profile', name: 'complete_profile', methods: ['PUT'])]
+    public function completeProfile(Request $request): JsonResponse
+    {
+        /** @var User $user */
+        $user = $this->getUser();
+
+        if (!$user) {
+            return $this->json(['error' => 'Unauthorized'], Response::HTTP_UNAUTHORIZED);
+        }
+
+        $data = json_decode($request->getContent(), true);
+
+        // Update phone if provided
+        if (isset($data['phone'])) {
+            $phone = trim($data['phone']);
+            if (strlen($phone) > 15) {
+                return $this->json(
+                    ['error' => 'Phone number must not exceed 15 characters'],
+                    Response::HTTP_BAD_REQUEST
+                );
+            }
+            $user->setPhone($phone);
+        }
+
+        // Update profile picture if provided
+        if (isset($data['profilePicture']) && !empty(trim($data['profilePicture']))) {
+            $user->setProfilePicture(trim($data['profilePicture']));
+        }
+
+        // Update role if provided
+        if (isset($data['role'])) {
+            $role = $data['role'];
+
+            // Add ROLE_ prefix if not present
+            if (!str_starts_with($role, 'ROLE_')) {
+                $role = 'ROLE_' . strtoupper($role);
+            } else {
+                $role = strtoupper($role);
+            }
+
+            // Validate role
+            $allowedRoles = ['ROLE_USER', 'ROLE_ADMIN'];
+            if (!in_array($role, $allowedRoles)) {
+                return $this->json(
+                    ['error' => 'Invalid role. Allowed roles: ROLE_USER, ROLE_ADMIN'],
+                    Response::HTTP_BAD_REQUEST
+                );
+            }
+
+            $user->setRoles([$role]);
+        }
+
+        $this->em->flush();
+
+        return $this->json([
+            'message' => 'Profile completed successfully',
+            'user' => [
+                'id' => $user->getId(),
+                'email' => $user->getEmail(),
+                'username' => $user->getUsername(),
+                'phone' => $user->getPhone(),
+                'profilePicture' => $user->getProfilePicture(),
+                'role' => $user->getRoles()[0] ?? 'ROLE_USER',
+                'isVerified' => $user->isVerified()
+            ]
+        ]);
+    }
 }
